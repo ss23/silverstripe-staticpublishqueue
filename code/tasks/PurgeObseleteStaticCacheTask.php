@@ -14,7 +14,9 @@
 class PurgeObseleteStaticCacheTask extends BuildTask {
 
 	protected $description = 'Purge obselete: cleans up obselete/orphaned staticpublisher cache files';
-
+	
+	private static $memory_limit;
+	
 	public function __construct() {
 		parent::__construct();
 		if ($this->config()->get('disabled') === true) {
@@ -23,7 +25,39 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 	}
 
 	function run($request) {
-		ini_set('memory_limit','512M');
+		// turn off save to database - we dont need to for this task
+		StaticPagesQueue::config()->realtime = false;
+		// set our builder up
+		$urls = new TemporaryURLArrayObject();
+		$builder = SiteTreeFullBuildEngine::create();
+		$builder->setUrlArrayObject($urls);
+		
+		// run the builder to generate urls
+		//  (we have to explicitly tell the builder to run normally, rather than in 
+		//   a separate process, so we dont write urls to the database)
+		$_GET['start'] = 0;
+		$builder->config()->records_per_request = 100000;
+		$builder->run($request);
+		
+		// now our URLArrayObject will have all current urls
+		
+// 		die('all valid urls: '.print_r($urls->getArrayCopy(),true));
+		
+		
+// 		$page = SiteTreeFullBuildEngine::getAllLivePages()->byID('7886');
+		
+// 		die('here we go: '.print_r($page->urlsToCache(),true));
+		
+		
+		
+		$dry = $request->getVar('dry') === '0' ? false : true; 
+		$actionStr = 'Deleted';
+		if($dry){
+			$actionStr = 'Would delete';
+			self::msg('DRY RUN: add ?dry=0 to run for real');
+		}
+		
+		ini_set('memory_limit', $this->config()->memory_limit);
 		$oldMode = Versioned::get_reading_mode();
 		Versioned::reading_stage('Live');
 
@@ -38,25 +72,12 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 		if(!isset($directory, $fileext)) die('FilesystemPublisher configuration not found.');
 
 		// Get list of cacheable pages in the live SiteTree
-		$pages = singleton('Page')->allPagesToCache();
-		foreach($pages as $page_link) {
-			$page = SiteTree::get_by_link($page_link);
-			if($page && $page->getLiveURLSegment()) {
-				if($subpages = $page->subPagesToCache()) {
-					$pages = array_merge($pages, $subpages);
-					unset($subpages);
-				}
-				if($affectedpages = $page->pagesAffected()) {
-					$pages = array_merge($pages, $affectedpages);
-					unset($affectedpages);
-				}
-			}
-		}
+		$pages = $urls->getAsArrayKeys();
 
 		// Get array of custom exclusion regexes from Config system
 		$excludes = $this->config()->get('exclude');
 
-		$removeURLs = array();
+		$removedURLPathMap = array();
 
 		$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
 		$it->rewind();
@@ -106,19 +127,61 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				continue;
 			}
 
-			$removeURLs[$urlpath] = $file_relative;
-			echo $file_relative . "\n";
-
+			// Remove
+			$cacheFilePaths = SiteTreePublishingEngine::getAllCacheFilePaths($file_relative);
+			foreach($cacheFilePaths as $cacheFilePath){
+				$absCacheFilePath = $directory . '/' . $cacheFilePath;
+				
+				if(file_exists($absCacheFilePath)){
+					self::msg($actionStr.': '.$absCacheFilePath);
+					if(!$dry){
+						unlink($absCacheFilePath);
+					}
+				}else{
+					// file not found, but we just saw it with the directory iterator... should never happen
+				}
+			}
+			
+			$removedURLPathMap[$urlpath] = $file_relative;
+			
 			$it->next();
 
 		}
-
-		echo sprintf("PurgeObseleteStaticCacheTask: Deleting %d obselete pages from cache\n", count($removeURLs));
-
-		// Remove current and stale cache files
-		singleton('SiteTree')->unpublishPagesAndStaleCopies($removeURLs);
+		
+		
+		self::msg($actionStr.' '.count($removedURLPathMap).' obselete pages from cache');
 
 		Versioned::set_reading_mode($oldMode);
 	}
+	
+	protected static function msg($str){
+		Debug::message($str, false); // I don't like the header, personal preference
+	}
 
+}
+
+/**
+ * This class is needed to make sure we do not add to the build queue when purging.
+ * TODO: there are methods you can use on the URLArrayObject and others to disable saving to db,
+ * but it doesn't seem to work.
+ */
+class TemporaryURLArrayObject extends URLArrayObject {
+	
+	public function insertIntoDB(){
+		return;
+	}
+	
+	/**
+	 * @return array of (urlSegment => priority)
+	 */
+	public function getAsArrayKeys(){
+		$r = array();
+		foreach($this->getArrayCopy() as $item){
+			// 0 is priority
+			// 1 is urlSegment
+			$r[$item[1]] = $item[0];
+		}
+		return $r;
+	}
+	
 }

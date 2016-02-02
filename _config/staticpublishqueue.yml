@@ -5,3 +5,5 @@ After: 'framework/*','cms/*'
 FilesystemPublisher:
   include_caching_metadata: true
   disable_realtime: true
+PurgeObseleteStaticCacheTask:
+  memory_limit: '512M'
