@@ -25,42 +25,35 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 	}
 
 	function run($request) {
-		// turn off save to database - we dont need to for this task
-		StaticPagesQueue::config()->realtime = false;
-		// set our builder up
-		$urls = new TemporaryURLArrayObject();
-		$builder = SiteTreeFullBuildEngine::create();
-		$builder->setUrlArrayObject($urls);
-		
-		// run the builder to generate urls
-		//  (we have to explicitly tell the builder to run normally, rather than in 
-		//   a separate process, so we dont write urls to the database)
-		$_GET['start'] = 0;
-		$builder->config()->records_per_request = 100000;
-		$builder->run($request);
-		
-		// now our URLArrayObject will have all current urls
-		
-// 		die('all valid urls: '.print_r($urls->getArrayCopy(),true));
-		
-		
-// 		$page = SiteTreeFullBuildEngine::getAllLivePages()->byID('7886');
-		
-// 		die('here we go: '.print_r($page->urlsToCache(),true));
-		
-		
-		
-		$dry = $request->getVar('dry') === '0' ? false : true; 
+		// Setup task
+		$dry = $request->getVar('dry') === '0' ? false : true;
 		$actionStr = 'Deleted';
 		if($dry){
 			$actionStr = 'Would delete';
 			self::msg('DRY RUN: add ?dry=0 to run for real');
 		}
-		
 		ini_set('memory_limit', $this->config()->memory_limit);
 		$oldMode = Versioned::get_reading_mode();
 		Versioned::reading_stage('Live');
-
+		
+		
+		// Get list of cacheable pages in the live SiteTree
+		//  turn off save to database - we dont need to for this task
+		StaticPagesQueue::config()->realtime = false;
+		//  set our builder up
+		$urls = new TemporaryURLArrayObject();
+		$builder = SiteTreeFullBuildEngine::create();
+		$builder->setUrlArrayObject($urls);
+		//  run the builder to generate urls
+		//   (we have to explicitly tell the builder to run normally, rather than in 
+		//    a separate process, so we dont write urls to the database)
+		$_GET['start'] = 0;
+		$builder->config()->records_per_request = 100000;
+		$builder->run($request);
+		$pages = $urls->getAsArrayKeys();
+		
+		
+		// Browse files
 		foreach(Config::inst()->get('SiteTree', 'extensions') as $extension) {
 			if(preg_match('/FilesystemPublisher\(\'(\w+)\',\s?\'(\w+)\'\)/', $extension, $matches)) {
 				$directory = BASE_PATH . '/' . $matches[1];
@@ -68,11 +61,7 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				break;
 			}
 		}
-
 		if(!isset($directory, $fileext)) die('FilesystemPublisher configuration not found.');
-
-		// Get list of cacheable pages in the live SiteTree
-		$pages = $urls->getAsArrayKeys();
 
 		// Get array of custom exclusion regexes from Config system
 		$excludes = $this->config()->get('exclude');
