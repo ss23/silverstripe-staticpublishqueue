@@ -52,6 +52,7 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 		$builder->run($request);
 		$pages = $urls->getAsArrayKeys();
 		
+		echo 'PAGES: '.print_r($pages,true);
 		
 		// Browse files
 		foreach(Config::inst()->get('SiteTree', 'extensions') as $extension) {
@@ -115,6 +116,8 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				$it->next();
 				continue;
 			}
+			
+			self::msg('CHECK: '.$urlpath);
 
 			// Remove
 			$cacheFilePaths = SiteTreePublishingEngine::getAllCacheFilePaths($file_relative);
