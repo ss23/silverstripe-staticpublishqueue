@@ -122,7 +122,7 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				$absCacheFilePath = $directory . '/' . $cacheFilePath;
 				
 				if(file_exists($absCacheFilePath)){
-					self::msg($actionStr.': '.$absCacheFilePath);
+					self::msg($actionStr.': '.$file_relative);
 					if(!$dry){
 						unlink($absCacheFilePath);
 					}

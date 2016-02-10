@@ -243,6 +243,20 @@ class SiteTreePublishingEngine extends DataExtension {
 			@unlink($cacheBaseDir.'/'.$path);
 		}
 	}
+	
+	/**
+	 * TODO: DRY
+	 * @param filePath string - e.g. /var/www/cache/example.html.php
+	 * @return array of string paths
+	 */
+	public static function getAllCacheFilePaths($filePath){
+		$r = array($filePath);
+		$lastDot = strrpos($filePath, '.'); //find last dot
+		if($lastDot !== false){
+			$r[] = substr($filePath, 0, $lastDot) . '.stale.html';
+		}
+		return $r;
+	}
 
 
 }
