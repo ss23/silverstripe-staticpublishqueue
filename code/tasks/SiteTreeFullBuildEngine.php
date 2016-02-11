@@ -23,6 +23,8 @@ class SiteTreeFullBuildEngine extends BuildTask {
 
 	/** @var int - chunk size (set via config) */
 	private static $records_per_request = 200;
+	
+	private static $memory_limit;
 
 
 	/**
@@ -49,6 +51,7 @@ class SiteTreeFullBuildEngine extends BuildTask {
 	 * @return bool
 	 */
 	public function run($request) {
+		ini_set('memory_limit', $this->config()->memory_limit);
 
 		if($request->getVar('urls') && is_array($request->getVar('urls'))) {
 			return $this->queueURLs($request->getVar('urls'));
@@ -128,7 +131,6 @@ class SiteTreeFullBuildEngine extends BuildTask {
 	 * @return DataList
 	 */
 	protected function getAllLivePages() {
-		ini_set('memory_limit', '512M');
 		$oldMode = Versioned::get_reading_mode();
 		if(class_exists('Subsite')) {
 			Subsite::disable_subsite_filter(true);

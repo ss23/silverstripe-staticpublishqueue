@@ -7,3 +7,5 @@ FilesystemPublisher:
   disable_realtime: true
 PurgeObseleteStaticCacheTask:
   memory_limit: '512M'
+SiteTreeFullBuildEngine:
+  memory_limit: '512M'

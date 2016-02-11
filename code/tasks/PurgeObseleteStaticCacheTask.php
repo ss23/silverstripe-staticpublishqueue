@@ -50,7 +50,7 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 		$_GET['start'] = 0;
 		$builder->config()->records_per_request = 100000;
 		$builder->run($request);
-		$pages = $urls->getAsArrayKeys();
+		$pages = $urls->getUrls();
 		
 		echo 'PAGES: '.print_r($pages,true);
 		
@@ -166,7 +166,7 @@ class TemporaryURLArrayObject extends URLArrayObject {
 	/**
 	 * @return array of (urlSegment => priority)
 	 */
-	public function getAsArrayKeys(){
+	public function getUrlsAsArrayKeys(){
 		$r = array();
 		foreach($this->getArrayCopy() as $item){
 			// 0 is priority
@@ -174,6 +174,13 @@ class TemporaryURLArrayObject extends URLArrayObject {
 			$r[$item[1]] = $item[0];
 		}
 		return $r;
+	}
+	
+	/**
+	 * @return array of urlSegment
+	 */
+	public function getUrls(){
+		return array_values($this->getUrlsAsArrayKeys());
 	}
 	
 }
