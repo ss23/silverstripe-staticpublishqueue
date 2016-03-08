@@ -52,8 +52,6 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 		$builder->run($request);
 		$pages = $urls->getUrls();
 		
-		echo 'PAGES: '.print_r($pages,true);
-		
 		// Browse files
 		foreach(Config::inst()->get('SiteTree', 'extensions') as $extension) {
 			if(preg_match('/FilesystemPublisher\(\'(\w+)\',\s?\'(\w+)\'\)/', $extension, $matches)) {
@@ -117,6 +115,17 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				continue;
 			}
 			
+			// Exclude files that are simply redirects
+			$redirectHeaderLine1 = '* This is a system-generated PHP script that performs header management for';
+			$redirectHeaderLine2 = '* a 301 redirection.';
+			$contents = file_get_contents($it->current()->getPathname());
+			if(strstr($contents, $redirectHeaderLine1) !== false && strstr($contents, $redirectHeaderLine2) !== false){
+				// TODO: find a better way of detecting redirection files?
+				$it->next();
+				continue;
+			}
+			
+					
 			self::msg('CHECK: '.$urlpath);
 
 			// Remove
