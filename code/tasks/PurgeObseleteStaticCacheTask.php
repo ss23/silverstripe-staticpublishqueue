@@ -125,9 +125,6 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				continue;
 			}
 			
-					
-			self::msg('CHECK: '.$urlpath);
-
 			// Remove
 			$cacheFilePaths = SiteTreePublishingEngine::getAllCacheFilePaths($file_relative);
 			foreach($cacheFilePaths as $cacheFilePath){
@@ -189,7 +186,7 @@ class TemporaryURLArrayObject extends URLArrayObject {
 	 * @return array of urlSegment
 	 */
 	public function getUrls(){
-		return array_values($this->getUrlsAsArrayKeys());
+		return array_keys($this->getUrlsAsArrayKeys());
 	}
 	
 }
