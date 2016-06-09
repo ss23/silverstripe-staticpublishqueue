@@ -217,6 +217,9 @@ class SiteTreePublishingEngine extends DataExtension {
 			if ($lastDot !== false) {
 				$stalePath = substr($path, 0, $lastDot) . '.stale' . substr($path, $lastDot);
 				$this->owner->deleteFromCacheDir($stalePath);
+				// not sure why, but stale file extension could be .html when real file is .php
+				$stalePath_html = substr($path, 0, $lastDot) . '.stale' . '.html';
+				$this->owner->deleteFromCacheDir($stalePath_html);
 			}
 		}
 	}

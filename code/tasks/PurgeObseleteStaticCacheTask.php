@@ -65,6 +65,9 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 		// Get array of custom exclusion regexes from Config system
 		$excludes = $this->config()->get('exclude');
 
+		$stale_suffix = '.stale.html';
+		$stale_suffix_length = strlen($stale_suffix);
+
 		$removedURLPathMap = array();
 
 		$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
@@ -83,6 +86,27 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 
 			// Handle homepage special case
 			if($file_relative == 'index.html') $urlpath = '';
+
+			// Check for orphan stale files
+			if(substr($file_relative, -$stale_suffix_length) == $stale_suffix){
+				// get original from stale
+				$original = substr($file_relative, 0, -$stale_suffix_length) . '.' . $fileext;
+				
+				
+				if(!file_exists($directory . '/' . $original)){
+					self::msg($actionStr.': '.$file_relative.' (orphan stale file)');
+					if(!$dry){
+						unlink($absCacheFilePath);
+					}
+					
+					$removedURLPathMap[$urlpath] = $file_relative;
+					
+					$it->next();
+					continue;
+				}
+				
+				
+			}
 
 			// Exclude files that do not end in the file extension specified for FilesystemPublisher
 			$length = strlen('.' . $fileext);
