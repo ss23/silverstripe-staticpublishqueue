@@ -91,9 +91,10 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 			if(substr($file_relative, -$stale_suffix_length) == $stale_suffix){
 				// get original from stale
 				$original = substr($file_relative, 0, -$stale_suffix_length) . '.' . $fileext;
+				$absCacheFilePath = $directory . '/' . $file_relative;
+				$absOriginalFilePath = $directory . '/' . $original;
 				
-				
-				if(!file_exists($directory . '/' . $original)){
+				if(!file_exists($absOriginalFilePath)){
 					self::msg($actionStr.': '.$file_relative.' (orphan stale file)');
 					if(!$dry){
 						unlink($absCacheFilePath);
