@@ -82,7 +82,7 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 			}
 
 			// Handle homepage special case
-			if($file_relative == 'index.html') $urlpath = '';
+			if($file_relative == 'index.html' || $file_relative == 'index.php') $urlpath = '';
 
 			// Exclude files that do not end in the file extension specified for FilesystemPublisher
 			$length = strlen('.' . $fileext);
@@ -131,7 +131,7 @@ class PurgeObseleteStaticCacheTask extends BuildTask {
 				$absCacheFilePath = $directory . '/' . $cacheFilePath;
 				
 				if(file_exists($absCacheFilePath)){
-					self::msg($actionStr.': '.$file_relative);
+					self::msg(sprintf('%s: %s', $actionStr, $absCacheFilePath));
 					if(!$dry){
 						unlink($absCacheFilePath);
 					}
